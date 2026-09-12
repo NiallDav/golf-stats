@@ -855,3 +855,36 @@ input:focus {
     font-size: 21px;
   }
 }
+
+
+.stats-tables {
+  display: grid;
+  gap: 18px;
+}
+
+.stat-table-card .table-wrap {
+  max-width: 100%;
+}
+
+.hole-stats-table {
+  min-width: 1120px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hole-stats-table th,
+.hole-stats-table td {
+  text-align: center;
+}
+
+.hole-stats-table th:first-child,
+.hole-stats-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  background: #111a2b;
+}
+
+.hole-stats-table th:first-child {
+  z-index: 2;
+}
