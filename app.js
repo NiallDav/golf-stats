@@ -854,6 +854,31 @@ function playersPage(ps) {
   `;
 }
 
+function comparisonStat(comparison, value, className = "") {
+  if (!comparison) return "";
+
+  return `
+    <div class="comparison-stat ${className}">
+      <span>${esc(comparison.name)}</span>
+      <strong>${value}</strong>
+    </div>
+  `;
+}
+
+function recentFormCards(player) {
+  return player.last3.map(x => `
+    <div
+      class="form-game ${parClass(overPar(x.p, x.r))}"
+      onclick="openRound(${rounds.indexOf(x.r)})"
+    >
+      <strong>${total(x.p)}</strong>
+      <span>${fmtPar(overPar(x.p, x.r))}</span>
+      <small>${esc(x.r.course)}</small>
+      <small>${esc(x.r.date)}</small>
+    </div>
+  `).join("");
+}
+
 function renderPlayer() {
   const p = playerStats(
     selectedPlayer,
@@ -925,6 +950,10 @@ function renderPlayer() {
           <div class="stat">
             ${Math.round(p.avg)}
           </div>
+          ${comparisonStat(
+            comparison,
+            comparison ? Math.round(comparison.avg) : ""
+          )}
         </div>
 
         <div class="card">
@@ -935,6 +964,10 @@ function renderPlayer() {
           <div class="stat">
             ${p.best}
           </div>
+          ${comparisonStat(
+            comparison,
+            comparison ? comparison.best : ""
+          )}
         </div>
 
         <div class="card">
@@ -945,6 +978,10 @@ function renderPlayer() {
           <div class="stat">
             ${p.latest}
           </div>
+          ${comparisonStat(
+            comparison,
+            comparison ? comparison.latest : ""
+          )}
         </div>
 
         <div class="card">
@@ -955,6 +992,10 @@ function renderPlayer() {
           <div class="stat form-stat">
             ${Math.round(p.form)}
           </div>
+          ${comparisonStat(
+            comparison,
+            comparison ? Math.round(comparison.form) : ""
+          )}
         </div>
 
       </div>
@@ -977,39 +1018,22 @@ function renderPlayer() {
 
         </div>
 
-        <div class="big-form">
-
-          ${p.last3.map(x => `
-
-            <div
-              class="form-game ${parClass(
-                overPar(x.p, x.r)
-              )}"
-              onclick="openRound(${rounds.indexOf(x.r)})"
-            >
-
-              <strong>
-                ${total(x.p)}
-              </strong>
-
-              <span>
-                ${fmtPar(
-                  overPar(x.p, x.r)
-                )}
-              </span>
-
-              <small>
-                ${esc(x.r.course)}
-              </small>
-
-              <small>
-                ${esc(x.r.date)}
-              </small>
-
+        <div class="recent-form-comparison">
+          <div>
+            ${comparison ? `<div class="series-label primary">${esc(p.name)}</div>` : ""}
+            <div class="big-form">
+              ${recentFormCards(p)}
             </div>
+          </div>
 
-          `).join("")}
-
+          ${comparison ? `
+            <div>
+              <div class="series-label comparison">${esc(comparison.name)}</div>
+              <div class="big-form">
+                ${recentFormCards(comparison)}
+              </div>
+            </div>
+          ` : ""}
         </div>
 
       </div>
@@ -1027,6 +1051,10 @@ function renderPlayer() {
           <div class="stat form-stat">
             ${Math.round(p.form)}
           </div>
+          ${comparisonStat(
+            comparison,
+            comparison ? Math.round(comparison.form) : ""
+          )}
 
         </div>
 
@@ -1037,6 +1065,10 @@ function renderPlayer() {
           </div>
 
           <div class="stat">${p.last3.length}</div>
+          ${comparisonStat(
+            comparison,
+            comparison ? comparison.last3.length : ""
+          )}
 
         </div>
 
@@ -1059,6 +1091,12 @@ function renderPlayer() {
             </span>
 
           </div>
+          ${comparisonStat(
+            comparison,
+            comparison
+              ? `<span class="par ${parClass(comparison.bestOverPar)}">${fmtPar(comparison.bestOverPar)}</span>`
+              : ""
+          )}
 
         </div>
 
@@ -1081,6 +1119,12 @@ function renderPlayer() {
             </span>
 
           </div>
+          ${comparisonStat(
+            comparison,
+            comparison
+              ? `<span class="par ${parClass(comparison.worstOverPar)}">${fmtPar(comparison.worstOverPar)}</span>`
+              : ""
+          )}
 
         </div>
 
@@ -1314,7 +1358,7 @@ function renderPlayerCharts(p, comparison) {
 
           if (value === null || value === undefined) return;
 
-          const yOffset = datasetIndex === 0 ? -14 : 16;
+          const yOffset = datasetIndex === 0 ? -14 : -26;
 
           ctx.lineWidth = 3;
           ctx.strokeStyle = "#0f1829";
@@ -1445,33 +1489,29 @@ function renderPlayerCharts(p, comparison) {
 
   if (holeCanvas) {
 
-    const values = [];
+    const holeAverages = name => {
+      const values = [];
 
-    for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < 18; i++) {
+        const holeScores =
+          playerRounds(name, courseFilter)
+            .map(x => Number(x.p.scores?.[i]))
+            .filter(n => Number.isFinite(n));
 
-      const holeScores =
-        playerRounds(
-          p.name,
-          courseFilter
-        )
-        .map(x =>
-          Number(
-            x.p.scores?.[i]
-          )
-        )
-        .filter(
-          n => Number.isFinite(n)
+        values.push(
+          holeScores.length
+            ? Math.round(average(holeScores))
+            : null
         );
+      }
 
-      values.push(
-        holeScores.length
-          ? holeScores.reduce(
-              (a, b) => a + b,
-              0
-            ) / holeScores.length
-          : null
-      );
-    }
+      return values;
+    };
+
+    const values = holeAverages(p.name);
+    const comparisonValues = comparison
+      ? holeAverages(comparison.name)
+      : null;
 
     const chart = new Chart(
       holeCanvas,
@@ -1485,20 +1525,60 @@ function renderPlayerCharts(p, comparison) {
               (_, i) => `Hole ${i + 1}`
             ),
 
-          datasets: [{
-            label: "Average strokes",
-
-            data: values
-          }]
+          datasets: [
+            {
+              label: p.name,
+              data: values,
+              backgroundColor: "#5d8cff",
+              borderColor: "#5d8cff",
+              borderWidth: 1,
+              borderRadius: 5
+            },
+            ...(comparison ? [{
+              label: comparison.name,
+              data: comparisonValues,
+              backgroundColor: "#f7be14",
+              borderColor: "#f7be14",
+              borderWidth: 1,
+              borderRadius: 5
+            }] : [])
+          ]
         },
 
         options: {
           responsive: true,
           maintainAspectRatio: false,
 
+          plugins: {
+            legend: {
+              display: true,
+              position: "bottom",
+              labels: {
+                color: "#cbd5e7",
+                usePointStyle: true,
+                padding: 18
+              }
+            }
+          },
+
           scales: {
+            x: {
+              ticks: {
+                color: "#92a0b8"
+              },
+              grid: {
+                display: false
+              }
+            },
             y: {
-              beginAtZero: true
+              beginAtZero: true,
+              ticks: {
+                color: "#92a0b8",
+                precision: 0
+              },
+              grid: {
+                color: "rgba(130, 144, 168, 0.13)"
+              }
             }
           }
         }
