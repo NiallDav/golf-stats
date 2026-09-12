@@ -404,7 +404,7 @@ function home(ps, groupAvg, filteredRounds) {
       <div class="card">
         <div class="muted">Group average</div>
         <div class="stat">
-          ${groupAvg ? groupAvg.toFixed(1) : "-"}
+          ${groupAvg ? Math.round(groupAvg) : "-"}
         </div>
       </div>
 
@@ -540,7 +540,7 @@ function leaderboard(ps) {
 
               <td>
                 <strong>
-                  ${p.avg.toFixed(1)}
+                  ${Math.round(p.avg)}
                 </strong>
               </td>
 
@@ -571,7 +571,7 @@ function leaderboard(ps) {
               </td>
 
               <td>
-                <strong>${p.form.toFixed(1)}</strong>
+                <strong>${Math.round(p.form)}</strong>
               </td>
 
             </tr>
@@ -809,7 +809,7 @@ function playersPage(ps) {
             </div>
 
             <div class="player-number">
-              ${p.avg.toFixed(1)}
+              ${Math.round(p.avg)}
             </div>
 
             <div class="muted">
@@ -830,7 +830,7 @@ function playersPage(ps) {
 
               <span>
                 Form
-                <strong>${p.form.toFixed(1)}</strong>
+                <strong>${Math.round(p.form)}</strong>
               </span>
 
             </div>
@@ -908,7 +908,7 @@ function renderPlayer() {
           </div>
 
           <div class="stat">
-            ${p.avg.toFixed(1)}
+            ${Math.round(p.avg)}
           </div>
         </div>
 
@@ -938,7 +938,7 @@ function renderPlayer() {
           </div>
 
           <div class="stat form-stat">
-            ${p.form.toFixed(1)}
+            ${Math.round(p.form)}
           </div>
         </div>
 
@@ -1010,7 +1010,7 @@ function renderPlayer() {
           </div>
 
           <div class="stat form-stat">
-            ${p.form.toFixed(1)}
+            ${Math.round(p.form)}
           </div>
 
         </div>
@@ -1364,41 +1364,75 @@ function renderPlayerCharts(p) {
 
 function holeStatValue(games, holeIndex, metric) {
   const entries = games
-    .map(x => ({
-      score: Number(x.p?.scores?.[holeIndex]),
-      par: coursePars(x.r.course)[holeIndex]
-    }))
+    .map(x => {
+      const score = Number(x.p?.scores?.[holeIndex]);
+      const par = coursePars(x.r.course)[holeIndex];
+
+      return {
+        score,
+        par,
+        diff: score - par
+      };
+    })
     .filter(x => Number.isFinite(x.score) && x.score > 0);
 
   if (!entries.length) return null;
 
   if (metric === "best") {
-    return Math.min(...entries.map(x => x.score));
+    return entries
+      .slice()
+      .sort((a, b) => a.score - b.score || a.diff - b.diff)[0];
   }
 
   if (metric === "latest") {
-    return entries[0].score;
+    return entries[0];
   }
 
-  if (metric === "formOverPar") {
-    return average(entries.map(x => x.score - x.par));
-  }
+  const score = average(entries.map(x => x.score));
+  const diff = average(entries.map(x => x.diff));
 
-  return average(entries.map(x => x.score));
+  return {
+    score,
+    diff,
+    value: metric === "formOverPar" ? diff : score
+  };
 }
 
-function formatHoleStat(value, metric) {
+function statNumber(stat, metric) {
+  if (!stat) return null;
+
+  return Math.round(
+    metric === "formOverPar"
+      ? stat.diff
+      : stat.score
+  );
+}
+
+function formatHoleStat(stat, metric) {
+  const value = statNumber(stat, metric);
+
   if (value === null) return "–";
 
-  if (metric === "formOverPar") {
-    return fmtPar(value.toFixed(1));
-  }
+  return metric === "formOverPar"
+    ? fmtPar(value)
+    : String(value);
+}
 
-  if (metric === "average" || metric === "form") {
-    return value.toFixed(1);
-  }
+function holeScoreClass(stat) {
+  if (!stat) return "";
 
-  return String(value);
+  const diff = Math.round(stat.diff);
+
+  if (diff <= -2) return "score-eagle";
+  if (diff === -1) return "score-birdie";
+  if (diff === 0) return "score-par";
+
+  const score = Math.min(
+    10,
+    Math.max(4, Math.round(stat.score))
+  );
+
+  return `score-${score}`;
 }
 
 function holeStatsTable(title, description, metric, filteredRounds) {
@@ -1427,9 +1461,20 @@ function holeStatsTable(title, description, metric, filteredRounds) {
       (_, i) => holeStatValue(source, i, metric)
     );
 
-    const numeric = values.filter(v => v !== null);
+    const numeric = values.filter(value => value !== null);
+
     const totalValue = numeric.length
-      ? numeric.reduce((sum, value) => sum + value, 0)
+      ? Math.round(
+          numeric.reduce(
+            (sum, value) =>
+              sum + (
+                metric === "formOverPar"
+                  ? value.diff
+                  : value.score
+              ),
+            0
+          )
+        )
       : null;
 
     return { name, values, totalValue };
@@ -1465,9 +1510,15 @@ function holeStatsTable(title, description, metric, filteredRounds) {
                   </button>
                 </td>
                 ${row.values.map(value => `
-                  <td>${formatHoleStat(value, metric)}</td>
+                  <td class="${holeScoreClass(value)}">${formatHoleStat(value, metric)}</td>
                 `).join("")}
-                <td><strong>${formatHoleStat(row.totalValue, metric)}</strong></td>
+                <td><strong>${
+                  row.totalValue === null
+                    ? "–"
+                    : metric === "formOverPar"
+                      ? fmtPar(row.totalValue)
+                      : row.totalValue
+                }</strong></td>
               </tr>
             `).join("")}
           </tbody>
