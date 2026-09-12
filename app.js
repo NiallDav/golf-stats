@@ -54,6 +54,10 @@ function fmtPar(n) {
   return n > 0 ? `+${n}` : `${n}`;
 }
 
+function formScores(games) {
+  return games.map(x => total(x.p)).join(" · ");
+}
+
 function parClass(n) {
   n = Number(n);
 
@@ -128,18 +132,6 @@ function playerStats(name, course = "all") {
 
     last5,
     last10,
-
-    formAvg:
-      last5.reduce(
-        (a, x) => a + total(x.p),
-        0
-      ) / last5.length,
-
-    formOverPar:
-      last5.reduce(
-        (a, x) => a + overPar(x.p, x.r),
-        0
-      ) / last5.length,
 
     bestOverPar:
       Math.min(
@@ -478,7 +470,7 @@ function leaderboard(ps) {
   return `
     <div class="table-wrap">
 
-      <table class="table">
+      <table class="table leaderboard-table">
 
         <thead>
 
@@ -490,7 +482,6 @@ function leaderboard(ps) {
             <th>Best</th>
             <th>Latest</th>
             <th>Form</th>
-            <th>Form +/−</th>
           </tr>
 
         </thead>
@@ -564,20 +555,6 @@ function leaderboard(ps) {
                   </span>
 
                 `).join("")}
-
-              </td>
-
-              <td>
-
-                <span
-                  class="par ${parClass(
-                    p.formOverPar
-                  )}"
-                >
-                  ${fmtPar(
-                    Number(p.formOverPar).toFixed(1)
-                  )}
-                </span>
 
               </td>
 
@@ -837,7 +814,7 @@ function playersPage(ps) {
 
               <span>
                 Form
-                <strong>${p.formAvg.toFixed(1)}</strong>
+                <strong>${formScores(p.last5)}</strong>
               </span>
 
             </div>
@@ -941,11 +918,11 @@ function renderPlayer() {
 
         <div class="card">
           <div class="muted">
-            Last 5 form
+            Form (last 5)
           </div>
 
-          <div class="stat">
-            ${p.formAvg.toFixed(1)}
+          <div class="stat form-stat">
+            ${formScores(p.last5)}
           </div>
         </div>
 
@@ -1013,11 +990,11 @@ function renderPlayer() {
         <div class="card">
 
           <div class="muted">
-            Form average
+            Form
           </div>
 
-          <div class="stat">
-            ${p.formAvg.toFixed(1)}
+          <div class="stat form-stat">
+            ${formScores(p.last5)}
           </div>
 
         </div>
@@ -1025,22 +1002,10 @@ function renderPlayer() {
         <div class="card">
 
           <div class="muted">
-            Form +/− par
+            Rounds in form
           </div>
 
-          <div class="stat">
-
-            <span
-              class="par ${parClass(
-                p.formOverPar
-              )}"
-            >
-              ${fmtPar(
-                Number(p.formOverPar).toFixed(1)
-              )}
-            </span>
-
-          </div>
+          <div class="stat">${p.last5.length}</div>
 
         </div>
 
@@ -1384,7 +1349,7 @@ function renderPlayerCharts(p) {
 function chartsPage(filteredRounds) {
   return `
 
-    <div class="grid">
+    <div class="grid charts-grid">
 
       <div class="card">
 
@@ -1405,15 +1370,15 @@ function chartsPage(filteredRounds) {
       <div class="card">
 
         <h2 class="section-title">
-          Player comparison
+          Player score lines
         </h2>
 
         <div class="muted">
-          Average score by player
+          Every player's score by round
         </div>
 
         <div class="chart-box">
-          <canvas id="playerAverageChart"></canvas>
+          <canvas id="playerLinesChart"></canvas>
         </div>
 
       </div>
@@ -1501,36 +1466,63 @@ function renderDashboardCharts(filteredRounds) {
 
   const playerCanvas =
     document.getElementById(
-      "playerAverageChart"
+      "playerLinesChart"
     );
 
   if (playerCanvas) {
 
-    const ps =
-      leaderboardData(courseFilter);
+    const chronological = filteredRounds.slice().reverse();
+    const names = allPlayers().filter(name =>
+      chronological.some(r =>
+        (r.players || []).some(p => p.name === name)
+      )
+    );
+    const colours = [
+      "#5d8cff", "#72d6a4", "#ff8798", "#f7be14",
+      "#b892ff", "#47c8ff", "#ff9f5d", "#d8e36d"
+    ];
 
     const chart = new Chart(
       playerCanvas,
       {
-        type: "bar",
+        type: "line",
 
         data: {
-          labels: ps.map(
-            p => p.name
-          ),
+          labels: chronological.map(r => `${r.date} · ${r.course}`),
 
-          datasets: [{
-            label: "Average score",
-
-            data: ps.map(
-              p => p.avg
-            )
-          }]
+          datasets: names.map((name, i) => ({
+            label: name,
+            data: chronological.map(r => {
+              const player = (r.players || []).find(p => p.name === name);
+              return player ? total(player) : null;
+            }),
+            borderColor: colours[i % colours.length],
+            backgroundColor: colours[i % colours.length],
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            tension: 0.25,
+            spanGaps: true
+          }))
         },
 
         options: {
           responsive: true,
           maintainAspectRatio: false,
+
+          interaction: {
+            mode: "nearest",
+            intersect: false
+          },
+
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: {
+                boxWidth: 12,
+                usePointStyle: true
+              }
+            }
+          },
 
           scales: {
             y: {

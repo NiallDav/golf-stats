@@ -173,6 +173,12 @@ button {
   letter-spacing: -1px;
 }
 
+.form-stat {
+  font-size: 22px;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
 .section-title {
   font-size: 19px;
   margin: 0 0 6px;
@@ -728,9 +734,30 @@ input:focus {
       40px;
   }
 
-  .grid,
   .player-grid {
     grid-template-columns: 1fr;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 13px;
+  }
+
+  .stats-grid .card {
+    min-height: 98px;
+  }
+
+  .stat {
+    font-size: 26px;
+  }
+
+  .form-stat {
+    font-size: 16px;
   }
 
   .top {
@@ -739,6 +766,18 @@ input:focus {
 
   .tabs {
     overflow-x: auto;
+    scrollbar-width: none;
+    margin-left: -4px;
+    margin-right: -4px;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    flex: 1 0 auto;
+    padding: 9px 11px;
   }
 
   .profile-head h1 {
@@ -751,5 +790,68 @@ input:focus {
         6,
         minmax(42px, 1fr)
       );
+  }
+
+  .chart-box,
+  .chart-box.tall {
+    height: 280px;
+  }
+
+  .big-form {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .form-game {
+    min-width: 0;
+    padding: 9px 3px;
+  }
+
+  .form-game strong {
+    font-size: 17px;
+  }
+
+  .form-game small {
+    font-size: 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .player-mini {
+    flex-wrap: wrap;
+  }
+
+  .table {
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .leaderboard-table th:nth-child(3),
+  .leaderboard-table td:nth-child(3),
+  .leaderboard-table th:nth-child(5),
+  .leaderboard-table td:nth-child(5),
+  .leaderboard-table th:nth-child(6),
+  .leaderboard-table td:nth-child(6) {
+    display: none;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 6px;
+  }
+}
+
+@media (max-width: 380px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .brand {
+    font-size: 21px;
   }
 }
