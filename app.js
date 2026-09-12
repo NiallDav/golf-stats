@@ -1,5 +1,6 @@
 const SUPABASE_URL="https://ynbazjjyauxcpadupgzq.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_z_J5OQ1beeAHZORD9yIiFw_0WWxwPGW";
+const WORKBOOK_DATA_CUTOFF = "2026-09-12";
 
 const hasSupabase =
   SUPABASE_URL.startsWith("https://") &&
@@ -2231,9 +2232,26 @@ function destroyCharts() {
 }
 
 async function load() {
+  let workbookRounds = [];
+
+  try {
+    const response = await fetch(
+      "rounds.json?v=20260912-1",
+      { cache: "no-store" }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Score data returned ${response.status}`);
+    }
+
+    workbookRounds = await response.json();
+  } catch (error) {
+    console.error("Workbook data error:", error);
+  }
+
+  let newerDatabaseRounds = [];
 
   if (sb) {
-
     const {
       data,
       error
@@ -2241,6 +2259,7 @@ async function load() {
       await sb
         .from("rounds")
         .select("*")
+        .gt("date", WORKBOOK_DATA_CUTOFF)
         .order(
           "date",
           {
@@ -2249,37 +2268,10 @@ async function load() {
         );
 
     if (error) {
-
-      console.error(
-        "Supabase error:",
-        error
-      );
-
-      app.innerHTML = `
-
-        <div
-          style="
-            padding:30px;
-            font-family:Arial
-          "
-        >
-
-          <h2>
-            Supabase Error
-          </h2>
-
-          <p>
-            ${esc(error.message)}
-          </p>
-
-        </div>
-
-      `;
-
-      return;
+      console.error("Supabase error:", error);
+    } else {
+      newerDatabaseRounds = data || [];
     }
-
-    rounds = (data || []).map(withoutExcludedPlayers);
 
     const {
       data: {
@@ -2289,11 +2281,22 @@ async function load() {
       await sb.auth.getSession();
 
     session = s;
+  }
 
-  } else {
+  rounds = [
+    ...workbookRounds,
+    ...newerDatabaseRounds
+  ].map(withoutExcludedPlayers);
 
-    rounds = [];
+  if (!rounds.length) {
+    app.innerHTML = `
+      <div style="padding:30px;font-family:Arial">
+        <h2>Score data unavailable</h2>
+        <p>Please refresh the page.</p>
+      </div>
+    `;
 
+    return;
   }
 
   render();
