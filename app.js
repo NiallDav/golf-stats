@@ -217,9 +217,12 @@ function openRound(index) {
 }
 
 function closeDetail() {
+  const previousView = view;
+
   selectedPlayer = null;
+  selectedComparePlayer = null;
   selectedRound = null;
-  view = "home";
+  view = previousView === "player" ? "players" : "home";
 
   render();
 }
