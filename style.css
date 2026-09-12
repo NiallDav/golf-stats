@@ -1163,12 +1163,4 @@ input:focus {
   .compare-control select {
     width: 100%;
   }
-
-  #playerScoreChart {
-    min-width: 720px;
-  }
-
-  #playerScoreChart + * {
-    max-width: none;
-  }
 }
