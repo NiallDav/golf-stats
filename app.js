@@ -938,6 +938,21 @@ function renderPlayer() {
 
         </div>
 
+        <label class="compare-control profile-compare">
+          <span>Compare with</span>
+          <select onchange="setComparePlayer(this.value)">
+            <option value="">Choose player</option>
+            ${compareOptions.map(player => `
+              <option
+                value="${esc(player.name)}"
+                ${selectedComparePlayer === player.name ? "selected" : ""}
+              >
+                ${esc(player.name)}
+              </option>
+            `).join("")}
+          </select>
+        </label>
+
       </div>
 
       <div class="grid stats-grid">
@@ -1038,100 +1053,8 @@ function renderPlayer() {
 
       </div>
 
-      <br>
-
-      <div class="grid stats-grid">
-
-        <div class="card">
-
-          <div class="muted">
-            Form
-          </div>
-
-          <div class="stat form-stat">
-            ${Math.round(p.form)}
-          </div>
-          ${comparisonStat(
-            comparison,
-            comparison ? Math.round(comparison.form) : ""
-          )}
-
-        </div>
-
-        <div class="card">
-
-          <div class="muted">
-            Rounds in form
-          </div>
-
-          <div class="stat">${p.last3.length}</div>
-          ${comparisonStat(
-            comparison,
-            comparison ? comparison.last3.length : ""
-          )}
-
-        </div>
-
-        <div class="card">
-
-          <div class="muted">
-            Best +/− par
-          </div>
-
-          <div class="stat">
-
-            <span
-              class="par ${parClass(
-                p.bestOverPar
-              )}"
-            >
-              ${fmtPar(
-                p.bestOverPar
-              )}
-            </span>
-
-          </div>
-          ${comparisonStat(
-            comparison,
-            comparison
-              ? `<span class="par ${parClass(comparison.bestOverPar)}">${fmtPar(comparison.bestOverPar)}</span>`
-              : ""
-          )}
-
-        </div>
-
-        <div class="card">
-
-          <div class="muted">
-            Worst +/− par
-          </div>
-
-          <div class="stat">
-
-            <span
-              class="par ${parClass(
-                p.worstOverPar
-              )}"
-            >
-              ${fmtPar(
-                p.worstOverPar
-              )}
-            </span>
-
-          </div>
-          ${comparisonStat(
-            comparison,
-            comparison
-              ? `<span class="par ${parClass(comparison.worstOverPar)}">${fmtPar(comparison.worstOverPar)}</span>`
-              : ""
-          )}
-
-        </div>
-
-      </div>
 
       <br>
-
       <div class="card">
 
         <div class="section-head">
@@ -1150,21 +1073,6 @@ function renderPlayer() {
             </div>
 
           </div>
-
-          <label class="compare-control">
-            <span>Compare with</span>
-            <select onchange="setComparePlayer(this.value)">
-              <option value="">Choose player</option>
-              ${compareOptions.map(player => `
-                <option
-                  value="${esc(player.name)}"
-                  ${selectedComparePlayer === player.name ? "selected" : ""}
-                >
-                  ${esc(player.name)}
-                </option>
-              `).join("")}
-            </select>
-          </label>
 
         </div>
 
