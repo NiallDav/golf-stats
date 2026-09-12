@@ -16,7 +16,7 @@ let session = null;
 let view = "home";
 let selectedPlayer = null;
 let selectedRound = null;
-let courseFilter = "all";
+let courseFilter = "Belhus";
 let charts = [];
 
 const app = document.getElementById("app");
