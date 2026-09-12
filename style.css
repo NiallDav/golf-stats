@@ -1127,3 +1127,48 @@ input:focus {
     animation: none;
   }
 }
+
+
+.compare-control {
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.compare-control span {
+  color: #92a0b8;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.compare-control select {
+  min-width: 180px;
+  border-color: #344665;
+  background: #142039;
+  font-weight: 700;
+}
+
+#playerScoreChart {
+  cursor: crosshair;
+}
+
+@media (max-width: 600px) {
+  .compare-control {
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .compare-control select {
+    width: 100%;
+  }
+
+  #playerScoreChart {
+    min-width: 720px;
+  }
+
+  #playerScoreChart + * {
+    max-width: none;
+  }
+}
