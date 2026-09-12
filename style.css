@@ -1233,3 +1233,20 @@ input:focus {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+
+.profile-head {
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.profile-compare {
+  margin-left: auto;
+}
+
+@media (max-width: 600px) {
+  .profile-compare {
+    width: 100%;
+    margin: 4px 0 0;
+  }
+}
