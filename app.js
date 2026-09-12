@@ -54,8 +54,37 @@ function fmtPar(n) {
   return n > 0 ? `+${n}` : `${n}`;
 }
 
-function formScores(games) {
-  return games.map(x => total(x.p)).join(" · ");
+function average(values) {
+  return values.length
+    ? values.reduce((a, b) => a + Number(b), 0) / values.length
+    : null;
+}
+
+function formAverage(games) {
+  return average(games.map(x => total(x.p)));
+}
+
+function formOverParAverage(games) {
+  return average(games.map(x => overPar(x.p, x.r)));
+}
+
+function isActivePlayer(name) {
+  return String(name || "").trim().toLowerCase() !== "lee";
+}
+
+function withoutExcludedPlayers(round) {
+  return {
+    ...round,
+    players: (round.players || []).filter(p => isActivePlayer(p.name))
+  };
+}
+
+function coursePars(course) {
+  return course === "Belhus"
+    ? [4,4,4,4,4,3,4,3,4,4,3,4,4,3,4,5,3,5]
+    : course === "Cranham"
+      ? [4,4,3,4,3,4,5,3,4,4,3,5,3,4,4,3,4,3]
+      : Array(18).fill(4);
 }
 
 function parClass(n) {
@@ -79,7 +108,7 @@ function allPlayers() {
 
   rounds.forEach(r => {
     (r.players || []).forEach(p => {
-      if (!m[p.name]) {
+      if (isActivePlayer(p.name) && !m[p.name]) {
         m[p.name] = p.name;
       }
     });
@@ -113,7 +142,7 @@ function playerStats(name, course = "all") {
 
   const latest = games[0];
 
-  const last5 = games.slice(0, 5);
+  const last3 = games.slice(0, 3);
   const last10 = games.slice(0, 10);
 
   return {
@@ -130,8 +159,12 @@ function playerStats(name, course = "all") {
 
     latestRound: latest,
 
-    last5,
+    last3,
     last10,
+
+    form: formAverage(last3),
+
+    formOverPar: formOverParAverage(last3),
 
     bestOverPar:
       Math.min(
@@ -335,11 +368,7 @@ function renderMain() {
     </div>
   `;
 
-  if (view === "charts") {
-    requestAnimationFrame(() =>
-      renderDashboardCharts(filteredRounds)
-    );
-  }
+  // The Charts page now uses tables and needs no canvas rendering.
 }
 
 function home(ps, groupAvg, filteredRounds) {
@@ -542,20 +571,7 @@ function leaderboard(ps) {
               </td>
 
               <td>
-
-                ${p.last5.map(x => `
-
-                  <span
-                    class="form-dot ${parClass(
-                      overPar(x.p, x.r)
-                    )}"
-                    title="${esc(x.r.date)}"
-                  >
-                    ${total(x.p)}
-                  </span>
-
-                `).join("")}
-
+                <strong>${p.form.toFixed(1)}</strong>
               </td>
 
             </tr>
@@ -814,7 +830,7 @@ function playersPage(ps) {
 
               <span>
                 Form
-                <strong>${formScores(p.last5)}</strong>
+                <strong>${p.form.toFixed(1)}</strong>
               </span>
 
             </div>
@@ -918,11 +934,11 @@ function renderPlayer() {
 
         <div class="card">
           <div class="muted">
-            Form (last 5)
+            Form (last 3)
           </div>
 
           <div class="stat form-stat">
-            ${formScores(p.last5)}
+            ${p.form.toFixed(1)}
           </div>
         </div>
 
@@ -939,7 +955,7 @@ function renderPlayer() {
             </h2>
 
             <div class="muted">
-              Last 5 rounds
+              Last 3 rounds
             </div>
 
           </div>
@@ -948,7 +964,7 @@ function renderPlayer() {
 
         <div class="big-form">
 
-          ${p.last5.map(x => `
+          ${p.last3.map(x => `
 
             <div
               class="form-game ${parClass(
@@ -994,7 +1010,7 @@ function renderPlayer() {
           </div>
 
           <div class="stat form-stat">
-            ${formScores(p.last5)}
+            ${p.form.toFixed(1)}
           </div>
 
         </div>
@@ -1005,7 +1021,7 @@ function renderPlayer() {
             Rounds in form
           </div>
 
-          <div class="stat">${p.last5.length}</div>
+          <div class="stat">${p.last3.length}</div>
 
         </div>
 
@@ -1346,195 +1362,160 @@ function renderPlayerCharts(p) {
   }
 }
 
-function chartsPage(filteredRounds) {
+function holeStatValue(games, holeIndex, metric) {
+  const entries = games
+    .map(x => ({
+      score: Number(x.p?.scores?.[holeIndex]),
+      par: coursePars(x.r.course)[holeIndex]
+    }))
+    .filter(x => Number.isFinite(x.score) && x.score > 0);
+
+  if (!entries.length) return null;
+
+  if (metric === "best") {
+    return Math.min(...entries.map(x => x.score));
+  }
+
+  if (metric === "latest") {
+    return entries[0].score;
+  }
+
+  if (metric === "formOverPar") {
+    return average(entries.map(x => x.score - x.par));
+  }
+
+  return average(entries.map(x => x.score));
+}
+
+function formatHoleStat(value, metric) {
+  if (value === null) return "–";
+
+  if (metric === "formOverPar") {
+    return fmtPar(value.toFixed(1));
+  }
+
+  if (metric === "average" || metric === "form") {
+    return value.toFixed(1);
+  }
+
+  return String(value);
+}
+
+function holeStatsTable(title, description, metric, filteredRounds) {
+  const names = allPlayers().filter(name =>
+    filteredRounds.some(r =>
+      (r.players || []).some(p => p.name === name)
+    )
+  );
+
+  const rows = names.map(name => {
+    const games = filteredRounds
+      .map(r => {
+        const p = (r.players || []).find(x => x.name === name);
+        return p ? { r, p } : null;
+      })
+      .filter(Boolean);
+
+    const source = metric === "form" || metric === "formOverPar"
+      ? games.slice(0, 3)
+      : metric === "latest"
+        ? games.slice(0, 1)
+        : games;
+
+    const values = Array.from(
+      { length: 18 },
+      (_, i) => holeStatValue(source, i, metric)
+    );
+
+    const numeric = values.filter(v => v !== null);
+    const totalValue = numeric.length
+      ? numeric.reduce((sum, value) => sum + value, 0)
+      : null;
+
+    return { name, values, totalValue };
+  });
+
   return `
-
-    <div class="grid charts-grid">
-
-      <div class="card">
-
-        <h2 class="section-title">
-          Group average
-        </h2>
-
-        <div class="muted">
-          Average score per round
+    <div class="card stat-table-card">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">${title}</h2>
+          <div class="muted">${description}</div>
         </div>
-
-        <div class="chart-box">
-          <canvas id="groupAverageChart"></canvas>
-        </div>
-
       </div>
 
-      <div class="card">
-
-        <h2 class="section-title">
-          Player score lines
-        </h2>
-
-        <div class="muted">
-          Every player's score by round
-        </div>
-
-        <div class="chart-box">
-          <canvas id="playerLinesChart"></canvas>
-        </div>
-
+      <div class="table-wrap">
+        <table class="table hole-stats-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              ${Array.from({ length: 18 }, (_, i) => `<th>${i + 1}</th>`).join("")}
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => `
+              <tr>
+                <td>
+                  <button
+                    class="link-button"
+                    onclick='openPlayer(${JSON.stringify(row.name)})'
+                  >
+                    <strong>${esc(row.name)}</strong>
+                  </button>
+                </td>
+                ${row.values.map(value => `
+                  <td>${formatHoleStat(value, metric)}</td>
+                `).join("")}
+                <td><strong>${formatHoleStat(row.totalValue, metric)}</strong></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
       </div>
-
     </div>
-
   `;
 }
 
-function renderDashboardCharts(filteredRounds) {
-  if (!window.Chart) {
-    console.error(
-      "Chart.js is not loaded."
-    );
-
-    return;
+function chartsPage(filteredRounds) {
+  if (!filteredRounds.length) {
+    return '<div class="card"><div class="muted">No round data.</div></div>';
   }
 
-  const groupCanvas =
-    document.getElementById(
-      "groupAverageChart"
-    );
-
-  if (groupCanvas) {
-
-    const data = filteredRounds
-      .slice()
-      .reverse()
-      .map(r => {
-
-        const ps =
-          (r.players || [])
-            .map(p => total(p));
-
-        const avg = ps.length
-          ? ps.reduce(
-              (a, b) => a + b,
-              0
-            ) / ps.length
-          : null;
-
-        return {
-          date: r.date,
-          course: r.course,
-          avg
-        };
-      });
-
-    const chart = new Chart(
-      groupCanvas,
-      {
-        type: "line",
-
-        data: {
-          labels: data.map(
-            x => `${x.date} · ${x.course}`
-          ),
-
-          datasets: [{
-            label: "Group average",
-
-            data: data.map(
-              x => x.avg
-            ),
-
-            tension: 0.25
-          }]
-        },
-
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-
-          scales: {
-            y: {
-              beginAtZero: false
-            }
-          }
-        }
-      }
-    );
-
-    charts.push(chart);
-  }
-
-  const playerCanvas =
-    document.getElementById(
-      "playerLinesChart"
-    );
-
-  if (playerCanvas) {
-
-    const chronological = filteredRounds.slice().reverse();
-    const names = allPlayers().filter(name =>
-      chronological.some(r =>
-        (r.players || []).some(p => p.name === name)
-      )
-    );
-    const colours = [
-      "#5d8cff", "#72d6a4", "#ff8798", "#f7be14",
-      "#b892ff", "#47c8ff", "#ff9f5d", "#d8e36d"
-    ];
-
-    const chart = new Chart(
-      playerCanvas,
-      {
-        type: "line",
-
-        data: {
-          labels: chronological.map(r => `${r.date} · ${r.course}`),
-
-          datasets: names.map((name, i) => ({
-            label: name,
-            data: chronological.map(r => {
-              const player = (r.players || []).find(p => p.name === name);
-              return player ? total(player) : null;
-            }),
-            borderColor: colours[i % colours.length],
-            backgroundColor: colours[i % colours.length],
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            tension: 0.25,
-            spanGaps: true
-          }))
-        },
-
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-
-          interaction: {
-            mode: "nearest",
-            intersect: false
-          },
-
-          plugins: {
-            legend: {
-              position: "bottom",
-              labels: {
-                boxWidth: 12,
-                usePointStyle: true
-              }
-            }
-          },
-
-          scales: {
-            y: {
-              beginAtZero: false
-            }
-          }
-        }
-      }
-    );
-
-    charts.push(chart);
-  }
+  return `
+    <div class="stats-tables">
+      ${holeStatsTable(
+        "Average",
+        "Average score on every hole",
+        "average",
+        filteredRounds
+      )}
+      ${holeStatsTable(
+        "Form",
+        "Average score on every hole across the latest 3 rounds",
+        "form",
+        filteredRounds
+      )}
+      ${holeStatsTable(
+        "Form over par",
+        "Average against par on every hole across the latest 3 rounds",
+        "formOverPar",
+        filteredRounds
+      )}
+      ${holeStatsTable(
+        "Best",
+        "Best score each player has ever recorded on every hole",
+        "best",
+        filteredRounds
+      )}
+      ${holeStatsTable(
+        "Latest",
+        "Score on every hole in each player's latest round",
+        "latest",
+        filteredRounds
+      )}
+    </div>
+  `;
 }
 
 function renderRound() {
@@ -2090,7 +2071,7 @@ async function addRound(e) {
           )
       ),
 
-      data
+      withoutExcludedPlayers(data)
     ];
 
   } else {
@@ -2103,9 +2084,9 @@ async function addRound(e) {
       );
 
     if (i >= 0) {
-      rounds[i] = r;
+      rounds[i] = withoutExcludedPlayers(r);
     } else {
-      rounds.push(r);
+      rounds.push(withoutExcludedPlayers(r));
     }
 
   }
@@ -2247,8 +2228,7 @@ async function load() {
       return;
     }
 
-    rounds =
-      data || [];
+    rounds = (data || []).map(withoutExcludedPlayers);
 
     const {
       data: {
