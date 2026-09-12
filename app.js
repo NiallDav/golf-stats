@@ -15,6 +15,7 @@ let rounds = [];
 let session = null;
 let view = "home";
 let selectedPlayer = null;
+let selectedComparePlayer = null;
 let selectedRound = null;
 let courseFilter = "Belhus";
 let charts = [];
@@ -197,8 +198,14 @@ function setView(v) {
 
 function openPlayer(name) {
   selectedPlayer = name;
+  selectedComparePlayer = null;
   view = "player";
 
+  render();
+}
+
+function setComparePlayer(name) {
+  selectedComparePlayer = name || null;
   render();
 }
 
@@ -853,6 +860,13 @@ function renderPlayer() {
     courseFilter
   );
 
+  const compareOptions = leaderboardData(courseFilter)
+    .filter(player => player.name !== selectedPlayer);
+
+  const comparison = selectedComparePlayer
+    ? playerStats(selectedComparePlayer, courseFilter)
+    : null;
+
   if (!p) {
     view = "home";
     render();
@@ -1085,10 +1099,28 @@ function renderPlayer() {
             </h2>
 
             <div class="muted">
-              All rounds for ${esc(p.name)}
+              ${comparison
+                ? `${esc(p.name)} compared with ${esc(comparison.name)}`
+                : `All rounds for ${esc(p.name)}`
+              }
             </div>
 
           </div>
+
+          <label class="compare-control">
+            <span>Compare with</span>
+            <select onchange="setComparePlayer(this.value)">
+              <option value="">Choose player</option>
+              ${compareOptions.map(player => `
+                <option
+                  value="${esc(player.name)}"
+                  ${selectedComparePlayer === player.name ? "selected" : ""}
+                >
+                  ${esc(player.name)}
+                </option>
+              `).join("")}
+            </select>
+          </label>
 
         </div>
 
@@ -1153,7 +1185,7 @@ function renderPlayer() {
   `;
 
   requestAnimationFrame(() =>
-    renderPlayerCharts(p)
+    renderPlayerCharts(p, comparison)
   );
 }
 
@@ -1229,7 +1261,7 @@ function playerGamesTable(games) {
   `;
 }
 
-function renderPlayerCharts(p) {
+function renderPlayerCharts(p, comparison) {
   if (!window.Chart) {
     console.error(
       "Chart.js is not loaded."
@@ -1238,9 +1270,63 @@ function renderPlayerCharts(p) {
     return;
   }
 
-  const games = p.last10
-    .slice()
-    .reverse();
+  const primaryGames = playerRounds(p.name, courseFilter);
+  const comparisonGames = comparison
+    ? playerRounds(comparison.name, courseFilter)
+    : [];
+
+  const gameKey = game => `${game.r.date}|${game.r.course}`;
+
+  const timeline = [
+    ...primaryGames,
+    ...comparisonGames
+  ]
+    .filter((game, index, list) =>
+      list.findIndex(item => gameKey(item) === gameKey(game)) === index
+    )
+    .sort((a, b) =>
+      String(a.r.date).localeCompare(String(b.r.date)) ||
+      String(a.r.course).localeCompare(String(b.r.course))
+    );
+
+  const scoresByGame = games =>
+    new Map(games.map(game => [gameKey(game), total(game.p)]));
+
+  const primaryScores = scoresByGame(primaryGames);
+  const comparisonScores = scoresByGame(comparisonGames);
+
+  const pointLabels = {
+    id: "pointLabels",
+
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+
+      ctx.save();
+      ctx.font = "700 11px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      chart.data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+
+        meta.data.forEach((point, index) => {
+          const value = dataset.data[index];
+
+          if (value === null || value === undefined) return;
+
+          const yOffset = datasetIndex === 0 ? -14 : 16;
+
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = "#0f1829";
+          ctx.fillStyle = dataset.borderColor;
+          ctx.strokeText(String(value), point.x, point.y + yOffset);
+          ctx.fillText(String(value), point.x, point.y + yOffset);
+        });
+      });
+
+      ctx.restore();
+    }
+  };
 
   const scoreCanvas =
     document.getElementById(
@@ -1248,6 +1334,37 @@ function renderPlayerCharts(p) {
     );
 
   if (scoreCanvas) {
+    const datasets = [{
+      label: p.name,
+      data: timeline.map(game => primaryScores.get(gameKey(game)) ?? null),
+      borderColor: "#5d8cff",
+      backgroundColor: "#5d8cff",
+      pointBackgroundColor: "#eaf0ff",
+      pointBorderColor: "#5d8cff",
+      pointBorderWidth: 3,
+      pointRadius: 6,
+      pointHoverRadius: 9,
+      borderWidth: 3,
+      tension: 0.22,
+      spanGaps: true
+    }];
+
+    if (comparison) {
+      datasets.push({
+        label: comparison.name,
+        data: timeline.map(game => comparisonScores.get(gameKey(game)) ?? null),
+        borderColor: "#f7be14",
+        backgroundColor: "#f7be14",
+        pointBackgroundColor: "#fff7d1",
+        pointBorderColor: "#f7be14",
+        pointBorderWidth: 3,
+        pointRadius: 6,
+        pointHoverRadius: 9,
+        borderWidth: 3,
+        tension: 0.22,
+        spanGaps: true
+      });
+    }
 
     const chart = new Chart(
       scoreCanvas,
@@ -1255,34 +1372,63 @@ function renderPlayerCharts(p) {
         type: "line",
 
         data: {
-          labels: games.map(
-            x => `${x.r.date} · ${x.r.course}`
-          ),
-
-          datasets: [{
-            label: "Score",
-
-            data: games.map(
-              x => total(x.p)
-            ),
-
-            tension: 0.25
-          }]
+          labels: timeline.map(game => game.r.date),
+          datasets
         },
+
+        plugins: [pointLabels],
 
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          layout: {
+            padding: {
+              top: 22,
+              bottom: comparison ? 14 : 4
+            }
+          },
+
+          interaction: {
+            mode: "nearest",
+            intersect: false
+          },
 
           plugins: {
             legend: {
-              display: true
+              display: true,
+              position: "bottom",
+              labels: {
+                color: "#cbd5e7",
+                usePointStyle: true,
+                pointStyle: "circle",
+                padding: 18
+              }
             }
           },
 
           scales: {
+            x: {
+              ticks: {
+                color: "#92a0b8",
+                maxRotation: 45,
+                minRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 12
+              },
+              grid: {
+                color: "rgba(130, 144, 168, 0.09)"
+              }
+            },
             y: {
-              beginAtZero: false
+              beginAtZero: false,
+              grace: "12%",
+              ticks: {
+                color: "#92a0b8",
+                precision: 0
+              },
+              grid: {
+                color: "rgba(130, 144, 168, 0.13)"
+              }
             }
           }
         }
@@ -2328,5 +2474,8 @@ window.addPlayerRow =
 
 window.setCourseFilter =
   setCourseFilter;
+
+window.setComparePlayer =
+  setComparePlayer;
 
 load();
