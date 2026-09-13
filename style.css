@@ -1508,3 +1508,67 @@ input:focus {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+.player-card {
+  position: relative;
+  overflow: hidden;
+  border-color: #324461;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.player-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, #5d8cff, #47c8ff);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.player-card:hover,
+.player-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: #5d8cff;
+  box-shadow: 0 12px 28px rgba(28, 74, 151, 0.25);
+}
+
+.player-card:hover::before,
+.player-card:focus-visible::before {
+  opacity: 1;
+}
+
+.player-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px -2px -2px;
+  padding-top: 12px;
+  border-top: 1px solid #2d3d59;
+  color: #75a0ff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.player-card-action strong {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border-radius: 50%;
+  background: #294a82;
+  color: #ffffff;
+  font-size: 16px;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.player-card:hover .player-card-action strong,
+.player-card:focus-visible .player-card-action strong {
+  transform: translateX(3px);
+  background: #3d6fc6;
+}
