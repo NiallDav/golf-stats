@@ -811,6 +811,11 @@ function playersPage(ps) {
 
             </div>
 
+            <div class="player-card-action">
+              <span>View profile</span>
+              <strong aria-hidden="true">→</strong>
+            </div>
+
           </button>
 
         `).join("")}
