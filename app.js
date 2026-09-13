@@ -274,7 +274,7 @@ function nav() {
       </button>
 
       <button
-        class="tab ${view === "players" ? "active" : ""}"
+        class="tab ${view === "players" || view === "player" ? "active" : ""}"
         onclick="setView('players')"
       >
         Players
@@ -842,7 +842,9 @@ function renderPlayer() {
     courseFilter
   );
 
-  const compareOptions = leaderboardData(courseFilter)
+  const playerOptions = leaderboardData(courseFilter);
+
+  const compareOptions = playerOptions
     .filter(player => player.name !== selectedPlayer);
 
   const comparison = selectedComparePlayer
@@ -876,6 +878,28 @@ function renderPlayer() {
         </button>
 
       </header>
+
+      ${nav()}
+
+      <div class="player-profile-layout">
+
+        <aside class="card player-switcher">
+          <div class="eyebrow">PLAYERS</div>
+
+          <div class="player-switcher-list">
+            ${playerOptions.map(player => `
+              <button
+                class="player-switcher-button ${player.name === p.name ? "active" : ""}"
+                onclick='openPlayer(${JSON.stringify(player.name)})'
+              >
+                <span>${esc(player.name)}</span>
+                <small>${Math.round(player.avg)} avg</small>
+              </button>
+            `).join("")}
+          </div>
+        </aside>
+
+        <main class="player-profile-content">
 
       <div class="profile-head">
 
@@ -1086,6 +1110,10 @@ function renderPlayer() {
         </div>
 
         ${playerGamesTable(p.last10)}
+
+      </div>
+
+        </main>
 
       </div>
 
