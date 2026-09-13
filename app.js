@@ -1149,6 +1149,27 @@ function formAtGame(name, game) {
   );
 }
 
+function relativeFormDifference(name, game, score) {
+  const historicalForm = formAtGame(name, game);
+
+  return historicalForm === null
+    ? null
+    : Math.round(score - historicalForm);
+}
+
+function relativeFormBadge(difference) {
+  if (difference === null) return "";
+
+  return `
+    <span
+      class="par ${parClass(difference)}"
+      title="Compared with form at this date"
+    >
+      (${fmtPar(difference)})
+    </span>
+  `;
+}
+
 function playerGamesTable(games, player, comparison) {
   if (!games.length) {
     return '<div class="muted">No games.</div>';
@@ -1166,17 +1187,17 @@ function playerGamesTable(games, player, comparison) {
               ? `<th>${esc(comparison.name)} score</th>`
               : ""
             }
-            <th>+/− Form</th>
           </tr>
         </thead>
 
         <tbody>
           ${games.map(game => {
             const playerScore = total(game.p);
-            const historicalForm = formAtGame(player.name, game);
-            const formDifference = historicalForm === null
-              ? null
-              : Math.round(playerScore - historicalForm);
+            const playerFormDifference = relativeFormDifference(
+              player.name,
+              game,
+              playerScore
+            );
 
             const comparedPlayer = comparison
               ? (game.r.players || []).find(
@@ -1188,9 +1209,13 @@ function playerGamesTable(games, player, comparison) {
               ? total(comparedPlayer)
               : null;
 
-            const scoreDifference = comparedScore === null
-              ? null
-              : comparedScore - playerScore;
+            const comparedFormDifference = comparedPlayer
+              ? relativeFormDifference(
+                  comparison.name,
+                  game,
+                  comparedScore
+                )
+              : null;
 
             return `
               <tr
@@ -1199,7 +1224,11 @@ function playerGamesTable(games, player, comparison) {
               >
                 <td>${esc(game.r.date)}</td>
                 <td>${esc(game.r.course)}</td>
-                <td><strong>${playerScore}</strong></td>
+
+                <td>
+                  <strong>${playerScore}</strong>
+                  ${relativeFormBadge(playerFormDifference)}
+                </td>
 
                 ${comparison ? `
                   <td>
@@ -1207,30 +1236,11 @@ function playerGamesTable(games, player, comparison) {
                       ? '<span class="muted">Did not play</span>'
                       : `
                         <strong>${comparedScore}</strong>
-                        <span
-                          class="par ${parClass(scoreDifference)}"
-                          title="Compared with ${esc(player.name)} in this round"
-                        >
-                          (${fmtPar(scoreDifference)})
-                        </span>
+                        ${relativeFormBadge(comparedFormDifference)}
                       `
                     }
                   </td>
                 ` : ""}
-
-                <td>
-                  ${formDifference === null
-                    ? "–"
-                    : `
-                      <span
-                        class="par ${parClass(formDifference)}"
-                        title="Compared with form at this date"
-                      >
-                        ${fmtPar(formDifference)}
-                      </span>
-                    `
-                  }
-                </td>
               </tr>
             `;
           }).join("")}
