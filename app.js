@@ -18,6 +18,7 @@ let selectedPlayer = null;
 let selectedComparePlayer = null;
 let selectedRound = null;
 let courseFilter = "Belhus";
+let statsTableFilter = "all";
 let charts = [];
 
 const app = document.getElementById("app");
@@ -239,6 +240,11 @@ function closeDetail() {
 function setCourseFilter(value) {
   courseFilter = value;
 
+  render();
+}
+
+function setStatsTableFilter(value) {
+  statsTableFilter = value;
   render();
 }
 
@@ -1662,38 +1668,69 @@ function chartsPage(filteredRounds) {
     return '<div class="card"><div class="muted">No round data.</div></div>';
   }
 
+  const tableOptions = [
+    {
+      key: "average",
+      title: "Average",
+      description: "Average score on every hole"
+    },
+    {
+      key: "form",
+      title: "Form",
+      description: "Average score on every hole across the latest 3 rounds"
+    },
+    {
+      key: "formOverPar",
+      title: "Form over par",
+      description: "Average against par on every hole across the latest 3 rounds"
+    },
+    {
+      key: "best",
+      title: "Best",
+      description: "Best score each player has ever recorded on every hole"
+    },
+    {
+      key: "latest",
+      title: "Latest",
+      description: "Score on every hole in each player's latest round"
+    }
+  ];
+
+  const visibleTables = statsTableFilter === "all"
+    ? tableOptions
+    : tableOptions.filter(option => option.key === statsTableFilter);
+
   return `
+    <div class="chart-table-filter card">
+      <div>
+        <h2 class="section-title">Tables</h2>
+        <div class="muted">Choose which statistics to display</div>
+      </div>
+
+      <div class="stat-filter-options">
+        ${[
+          { key: "all", title: "All" },
+          ...tableOptions
+        ].map(option => `
+          <button
+            class="stat-filter-button ${statsTableFilter === option.key ? "active" : ""}"
+            onclick='setStatsTableFilter(${JSON.stringify(option.key)})'
+          >
+            ${esc(option.title)}
+          </button>
+        `).join("")}
+      </div>
+    </div>
+
     <div class="stats-tables">
-      ${holeStatsTable(
-        "Average",
-        "Average score on every hole",
-        "average",
-        filteredRounds
-      )}
-      ${holeStatsTable(
-        "Form",
-        "Average score on every hole across the latest 3 rounds",
-        "form",
-        filteredRounds
-      )}
-      ${holeStatsTable(
-        "Form over par",
-        "Average against par on every hole across the latest 3 rounds",
-        "formOverPar",
-        filteredRounds
-      )}
-      ${holeStatsTable(
-        "Best",
-        "Best score each player has ever recorded on every hole",
-        "best",
-        filteredRounds
-      )}
-      ${holeStatsTable(
-        "Latest",
-        "Score on every hole in each player's latest round",
-        "latest",
-        filteredRounds
-      )}
+      ${visibleTables.map(option =>
+        holeStatsTable(
+          option.title,
+          option.description,
+          option.key,
+          filteredRounds
+        )
+      ).join("")}
     </div>
   `;
 }
@@ -2456,6 +2493,9 @@ window.addPlayerRow =
 
 window.setCourseFilter =
   setCourseFilter;
+
+window.setStatsTableFilter =
+  setStatsTableFilter;
 
 window.setComparePlayer =
   setComparePlayer;
