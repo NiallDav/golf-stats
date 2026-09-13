@@ -1226,6 +1226,22 @@ function playerGamesTable(games, player, comparison) {
                 ? null
                 : Math.round(comparedScore - comparedHistoricalForm);
 
+            const playerResultClass = comparedScore === null
+              ? ""
+              : playerScore < comparedScore
+                ? "score-winner"
+                : playerScore === comparedScore
+                  ? "score-tie"
+                  : "";
+
+            const comparedResultClass = comparedScore === null
+              ? ""
+              : comparedScore < playerScore
+                ? "score-winner"
+                : comparedScore === playerScore
+                  ? "score-tie"
+                  : "";
+
             return `
               <tr
                 class="clickable"
@@ -1233,7 +1249,7 @@ function playerGamesTable(games, player, comparison) {
               >
                 <td>${esc(game.r.date)}</td>
                 <td>${esc(game.r.course)}</td>
-                <td>
+                <td class="${playerResultClass}">
                   <strong>${playerScore}</strong>
                   ${relativeFormBadge(playerFormDifference)}
                 </td>
@@ -1245,7 +1261,7 @@ function playerGamesTable(games, player, comparison) {
                 </td>
 
                 ${comparison ? `
-                  <td>
+                  <td class="${comparedResultClass}">
                     ${comparedScore === null
                       ? '<span class="muted">Did not play</span>'
                       : `
