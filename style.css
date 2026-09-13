@@ -1626,3 +1626,20 @@ input:focus {
     flex: 1 0 auto;
   }
 }
+
+
+.round-hole-stats th:nth-last-child(-n + 2),
+.round-hole-stats td:nth-last-child(-n + 2) {
+  min-width: 62px;
+  background: #253653;
+  color: #ffffff;
+}
+
+.round-hole-stats td:nth-last-child(2) {
+  font-size: 15px;
+}
+
+.round-hole-stats .muted {
+  color: #71829e;
+  font-size: 10px;
+}
