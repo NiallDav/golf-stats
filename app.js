@@ -1121,7 +1121,7 @@ function renderPlayer() {
 
         </div>
 
-        ${playerGamesTable(p.last10)}
+        ${playerGamesTable(p.last10, p, comparison)}
 
       </div>
 
@@ -1138,75 +1138,105 @@ function renderPlayer() {
   );
 }
 
-function playerGamesTable(games) {
+function formAtGame(name, game) {
+  const history = playerRounds(name, courseFilter);
+  const gameIndex = history.findIndex(item => item.r === game.r);
+
+  if (gameIndex < 0) return null;
+
+  return formAverage(
+    history.slice(gameIndex, gameIndex + 3)
+  );
+}
+
+function playerGamesTable(games, player, comparison) {
   if (!games.length) {
     return '<div class="muted">No games.</div>';
   }
 
   return `
-
     <div class="table-wrap">
-
-      <table class="table">
-
+      <table class="table latest-games-table">
         <thead>
-
           <tr>
             <th>Date</th>
             <th>Course</th>
-            <th>Score</th>
-            <th>+/- Par</th>
+            <th>${esc(player.name)} score</th>
+            ${comparison
+              ? `<th>${esc(comparison.name)} score</th>`
+              : ""
+            }
+            <th>+/− Form</th>
           </tr>
-
         </thead>
 
         <tbody>
+          ${games.map(game => {
+            const playerScore = total(game.p);
+            const historicalForm = formAtGame(player.name, game);
+            const formDifference = historicalForm === null
+              ? null
+              : Math.round(playerScore - historicalForm);
 
-          ${games.map(x => `
+            const comparedPlayer = comparison
+              ? (game.r.players || []).find(
+                  item => item.name === comparison.name
+                )
+              : null;
 
-            <tr
-              class="clickable"
-              onclick="openRound(${rounds.indexOf(x.r)})"
-            >
+            const comparedScore = comparedPlayer
+              ? total(comparedPlayer)
+              : null;
 
-              <td>
-                ${esc(x.r.date)}
-              </td>
+            const scoreDifference = comparedScore === null
+              ? null
+              : comparedScore - playerScore;
 
-              <td>
-                ${esc(x.r.course)}
-              </td>
+            return `
+              <tr
+                class="clickable"
+                onclick="openRound(${rounds.indexOf(game.r)})"
+              >
+                <td>${esc(game.r.date)}</td>
+                <td>${esc(game.r.course)}</td>
+                <td><strong>${playerScore}</strong></td>
 
-              <td>
-                <strong>
-                  ${total(x.p)}
-                </strong>
-              </td>
+                ${comparison ? `
+                  <td>
+                    ${comparedScore === null
+                      ? '<span class="muted">Did not play</span>'
+                      : `
+                        <strong>${comparedScore}</strong>
+                        <span
+                          class="par ${parClass(scoreDifference)}"
+                          title="Compared with ${esc(player.name)} in this round"
+                        >
+                          (${fmtPar(scoreDifference)})
+                        </span>
+                      `
+                    }
+                  </td>
+                ` : ""}
 
-              <td>
-
-                <span
-                  class="par ${parClass(
-                    overPar(x.p, x.r)
-                  )}"
-                >
-                  ${fmtPar(
-                    overPar(x.p, x.r)
-                  )}
-                </span>
-
-              </td>
-
-            </tr>
-
-          `).join("")}
-
+                <td>
+                  ${formDifference === null
+                    ? "–"
+                    : `
+                      <span
+                        class="par ${parClass(formDifference)}"
+                        title="Compared with form at this date"
+                      >
+                        ${fmtPar(formDifference)}
+                      </span>
+                    `
+                  }
+                </td>
+              </tr>
+            `;
+          }).join("")}
         </tbody>
-
       </table>
-
     </div>
-
   `;
 }
 
