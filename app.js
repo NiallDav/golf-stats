@@ -496,9 +496,9 @@ function leaderboard(ps) {
             <th>Player</th>
             <th>Rounds</th>
             <th>Average</th>
-            <th>Best</th>
-            <th>Latest</th>
             <th>Form</th>
+            <th>Latest</th>
+            <th>Best</th>
           </tr>
 
         </thead>
@@ -533,25 +533,21 @@ function leaderboard(ps) {
               </td>
 
               <td>
-                ${p.best}
+                <strong>${Math.round(p.form)}</strong>
               </td>
 
               <td>
-
                 ${p.latest}
-
                 <span
                   class="par ${parClass(p.latest - p.form)}"
                   title="Compared with 3-round form"
                 >
-                  ${fmtPar(Math.round(p.latest - p.form))}
-                  vs form
+                  (${fmtPar(Math.round(p.latest - p.form))})
                 </span>
-
               </td>
 
               <td>
-                <strong>${Math.round(p.form)}</strong>
+                ${p.best}
               </td>
 
             </tr>
