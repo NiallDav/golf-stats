@@ -819,10 +819,8 @@ input:focus {
 
   .leaderboard-table th:nth-child(3),
   .leaderboard-table td:nth-child(3),
-  .leaderboard-table th:nth-child(5),
-  .leaderboard-table td:nth-child(5),
-  .leaderboard-table th:nth-child(6),
-  .leaderboard-table td:nth-child(6) {
+  .leaderboard-table th:nth-child(7),
+  .leaderboard-table td:nth-child(7) {
     display: none;
   }
 
