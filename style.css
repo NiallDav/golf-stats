@@ -1250,3 +1250,110 @@ input:focus {
     margin: 4px 0 0;
   }
 }
+
+
+.player-profile-layout {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.player-profile-content {
+  min-width: 0;
+}
+
+.player-switcher {
+  position: sticky;
+  top: 14px;
+  padding: 14px;
+}
+
+.player-switcher-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.player-switcher-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: #18243a;
+  color: #cbd5e7;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.player-switcher-button:hover {
+  transform: translateX(2px);
+  border-color: #415474;
+  background: #20304b;
+}
+
+.player-switcher-button.active {
+  border-color: #5d8cff;
+  background: linear-gradient(135deg, #294a82, #1c3154);
+  color: #ffffff;
+  box-shadow: 0 5px 14px rgba(38, 91, 180, 0.24);
+}
+
+.player-switcher-button span {
+  overflow: hidden;
+  font-weight: 800;
+  text-overflow: ellipsis;
+}
+
+.player-switcher-button small {
+  flex: 0 0 auto;
+  color: #91a0b8;
+  font-size: 10px;
+}
+
+.player-switcher-button.active small {
+  color: #c8d8fa;
+}
+
+@media (max-width: 760px) {
+  .player-profile-layout {
+    display: block;
+  }
+
+  .player-switcher {
+    position: static;
+    margin-bottom: 16px;
+    padding: 12px;
+  }
+
+  .player-switcher .eyebrow {
+    margin-bottom: 8px;
+  }
+
+  .player-switcher-list {
+    display: flex;
+    gap: 7px;
+    margin: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .player-switcher-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .player-switcher-button {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 110px;
+  }
+
+  .player-switcher-button:hover {
+    transform: none;
+  }
+}
