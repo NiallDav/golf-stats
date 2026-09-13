@@ -1653,3 +1653,35 @@ input:focus {
   padding-right: 8px;
   white-space: nowrap;
 }
+
+
+.latest-games-table td.score-winner {
+  position: relative;
+  padding-right: 48px;
+  border-left: 3px solid #f7be14;
+  background: linear-gradient(90deg, rgba(247, 190, 20, 0.18), rgba(247, 190, 20, 0.05));
+  box-shadow: inset 0 0 14px rgba(247, 190, 20, 0.08);
+}
+
+.latest-games-table td.score-winner::after {
+  content: "WIN";
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  transform: translateY(-50%);
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: #f7be14;
+  color: #172033;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.latest-games-table td.score-winner > strong {
+  color: #ffe16b;
+}
+
+.latest-games-table td.score-tie {
+  background: rgba(93, 140, 255, 0.08);
+}
