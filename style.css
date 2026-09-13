@@ -173,12 +173,6 @@ button {
   letter-spacing: -1px;
 }
 
-.form-stat {
-  font-size: 22px;
-  line-height: 1.35;
-  letter-spacing: 0;
-}
-
 .section-title {
   font-size: 19px;
   margin: 0 0 6px;
@@ -754,10 +748,6 @@ input:focus {
 
   .stat {
     font-size: 26px;
-  }
-
-  .form-stat {
-    font-size: 16px;
   }
 
   .top {
@@ -1355,5 +1345,21 @@ input:focus {
 
   .player-switcher-button:hover {
     transform: none;
+  }
+}
+
+
+.player-profile-content > .stats-grid .stat {
+  min-height: 37px;
+  font-size: 32px !important;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+@media (max-width: 600px) {
+  .player-profile-content > .stats-grid .stat {
+    min-height: 30px;
+    font-size: 26px !important;
   }
 }
