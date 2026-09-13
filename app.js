@@ -337,10 +337,6 @@ function renderMain() {
         r.course === courseFilter
     );
 
-  const groupAvg = ps.length
-    ? ps.reduce((a, p) => a + p.avg, 0) / ps.length
-    : 0;
-
   app.innerHTML = `
     <div class="wrap">
 
@@ -365,7 +361,7 @@ function renderMain() {
 
       ${
         view === "home"
-          ? home(ps, groupAvg, filteredRounds)
+          ? home(ps, filteredRounds)
 
           : view === "rounds"
             ? roundsPage(filteredRounds)
@@ -382,44 +378,10 @@ function renderMain() {
   // The Charts page now uses tables and needs no canvas rendering.
 }
 
-function home(ps, groupAvg, filteredRounds) {
+function home(ps, filteredRounds) {
   const latest = filteredRounds[0];
 
   return `
-
-    <div class="grid stats-grid">
-
-      <div class="card">
-        <div class="muted">Rounds</div>
-        <div class="stat">
-          ${filteredRounds.length}
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="muted">Players</div>
-        <div class="stat">
-          ${ps.length}
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="muted">Courses</div>
-        <div class="stat">
-          ${new Set(
-            filteredRounds.map(r => r.course)
-          ).size}
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="muted">Group average</div>
-        <div class="stat">
-          ${groupAvg ? Math.round(groupAvg) : "-"}
-        </div>
-      </div>
-
-    </div>
 
     <div class="card">
 
@@ -564,19 +526,11 @@ function leaderboard(ps) {
                 ${p.latest}
 
                 <span
-                  class="par ${parClass(
-                    overPar(
-                      p.latestRound.p,
-                      p.latestRound.r
-                    )
-                  )}"
+                  class="par ${parClass(p.latest - p.form)}"
+                  title="Compared with 3-round form"
                 >
-                  ${fmtPar(
-                    overPar(
-                      p.latestRound.p,
-                      p.latestRound.r
-                    )
-                  )}
+                  ${fmtPar(Math.round(p.latest - p.form))}
+                  vs form
                 </span>
 
               </td>
