@@ -197,8 +197,17 @@ function setView(v) {
 }
 
 function openPlayer(name) {
+  const previousPlayer = selectedPlayer;
+
+  if (
+    selectedComparePlayer === name &&
+    previousPlayer &&
+    previousPlayer !== name
+  ) {
+    selectedComparePlayer = previousPlayer;
+  }
+
   selectedPlayer = name;
-  selectedComparePlayer = null;
   view = "player";
 
   render();
