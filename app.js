@@ -1144,9 +1144,14 @@ function formAtGame(name, game) {
 
   if (gameIndex < 0) return null;
 
-  return formAverage(
-    history.slice(gameIndex, gameIndex + 3)
+  const previousGames = history.slice(
+    gameIndex + 1,
+    gameIndex + 4
   );
+
+  return previousGames.length
+    ? formAverage(previousGames)
+    : null;
 }
 
 function relativeFormDifference(name, game, score) {
