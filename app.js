@@ -1837,7 +1837,7 @@ function renderRound() {
 
         <div class="table-wrap">
 
-          <table class="table hole-table">
+          <table class="table hole-table hole-stats-table round-hole-stats">
 
             <thead>
 
@@ -1900,12 +1900,10 @@ function renderRound() {
                       const diff =
                         n - pars[i];
 
-                      const cls =
-                        diff < 0
-                          ? "good"
-                          : diff > 0
-                            ? "bad"
-                            : "";
+                      const cls = holeScoreClass({
+                        score: n,
+                        diff
+                      });
 
                       return `
 
