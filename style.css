@@ -1429,3 +1429,84 @@ input:focus {
     flex: 0 0 auto;
   }
 }
+
+
+/* Integrated statistics filter */
+.chart-table-filter {
+  padding: 18px 20px;
+  border-color: #2b3c5b;
+  background:
+    linear-gradient(145deg, rgba(29, 43, 68, 0.95), rgba(15, 24, 41, 0.98));
+  box-shadow: 0 10px 26px rgba(3, 8, 18, 0.18);
+}
+
+.stat-filter-options {
+  padding: 5px;
+  gap: 3px;
+  border: 1px solid #293a58;
+  border-radius: 13px;
+  background: #0f192b;
+  box-shadow: inset 0 1px 4px rgba(3, 8, 18, 0.35);
+}
+
+.stat-filter-button {
+  position: relative;
+  padding: 9px 13px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #8f9db4;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.stat-filter-button:hover {
+  border-color: transparent;
+  background: #1b2942;
+  color: #dce6f7;
+}
+
+.stat-filter-button.active {
+  border-color: transparent;
+  background: linear-gradient(135deg, #3b6fc7, #294f91);
+  color: #ffffff;
+  box-shadow:
+    0 4px 12px rgba(31, 76, 156, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.stat-filter-button.active::after {
+  content: "";
+  position: absolute;
+  right: 22%;
+  bottom: 4px;
+  left: 22%;
+  height: 2px;
+  border-radius: 999px;
+  background: #8db6ff;
+}
+
+@media (max-width: 700px) {
+  .chart-table-filter {
+    padding: 16px;
+  }
+
+  .stat-filter-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 14px;
+    overflow: visible;
+  }
+
+  .stat-filter-button {
+    width: 100%;
+    padding: 10px 5px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  .stat-filter-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
