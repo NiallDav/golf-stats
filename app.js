@@ -1165,7 +1165,7 @@ function relativeFormBadge(difference) {
       class="par ${parClass(difference)}"
       title="Compared with form at this date"
     >
-      (${fmtPar(difference)})
+      ${fmtPar(difference)}
     </span>
   `;
 }
@@ -1183,8 +1183,12 @@ function playerGamesTable(games, player, comparison) {
             <th>Date</th>
             <th>Course</th>
             <th>${esc(player.name)} score</th>
+            <th>${esc(player.name)} relative form</th>
             ${comparison
-              ? `<th>${esc(comparison.name)} score</th>`
+              ? `
+                <th>${esc(comparison.name)} score</th>
+                <th>${esc(comparison.name)} relative form</th>
+              `
               : ""
             }
           </tr>
@@ -1224,20 +1228,22 @@ function playerGamesTable(games, player, comparison) {
               >
                 <td>${esc(game.r.date)}</td>
                 <td>${esc(game.r.course)}</td>
-
+                <td><strong>${playerScore}</strong></td>
                 <td>
-                  <strong>${playerScore}</strong>
-                  ${relativeFormBadge(playerFormDifference)}
+                  ${relativeFormBadge(playerFormDifference) || "–"}
                 </td>
 
                 ${comparison ? `
                   <td>
                     ${comparedScore === null
                       ? '<span class="muted">Did not play</span>'
-                      : `
-                        <strong>${comparedScore}</strong>
-                        ${relativeFormBadge(comparedFormDifference)}
-                      `
+                      : `<strong>${comparedScore}</strong>`
+                    }
+                  </td>
+                  <td>
+                    ${comparedScore === null
+                      ? "–"
+                      : relativeFormBadge(comparedFormDifference) || "–"
                     }
                   </td>
                 ` : ""}
