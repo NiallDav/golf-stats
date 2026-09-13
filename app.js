@@ -19,6 +19,7 @@ let selectedComparePlayer = null;
 let selectedRound = null;
 let courseFilter = "Belhus";
 let statsTableFilter = "all";
+let playerChartRange = "all";
 let charts = [];
 
 const app = document.getElementById("app");
@@ -245,6 +246,11 @@ function setCourseFilter(value) {
 
 function setStatsTableFilter(value) {
   statsTableFilter = value;
+  render();
+}
+
+function setPlayerChartRange(value) {
+  playerChartRange = value;
   render();
 }
 
@@ -1071,6 +1077,22 @@ function renderPlayer() {
 
           </div>
 
+          <div class="chart-range-filter" aria-label="Chart date range">
+            ${[
+              ["all", "All"],
+              ["6m", "6 months"],
+              ["3m", "3 months"],
+              ["1m", "1 month"]
+            ].map(([value, label]) => `
+              <button
+                class="chart-range-button ${playerChartRange === value ? "active" : ""}"
+                onclick='setPlayerChartRange(${JSON.stringify(value)})'
+              >
+                ${label}
+              </button>
+            `).join("")}
+          </div>
+
         </div>
 
         <div class="chart-box">
@@ -1223,10 +1245,40 @@ function renderPlayerCharts(p, comparison) {
     return;
   }
 
-  const primaryGames = playerRounds(p.name, courseFilter);
-  const comparisonGames = comparison
+  const allPrimaryGames = playerRounds(p.name, courseFilter);
+  const allComparisonGames = comparison
     ? playerRounds(comparison.name, courseFilter)
     : [];
+
+  const latestDate = [
+    ...allPrimaryGames,
+    ...allComparisonGames
+  ]
+    .map(game => game.r.date)
+    .sort()
+    .at(-1);
+
+  const rangeMonths = {
+    "6m": 6,
+    "3m": 3,
+    "1m": 1
+  };
+
+  let cutoffDate = null;
+
+  if (playerChartRange !== "all" && latestDate) {
+    const cutoff = new Date(`${latestDate}T00:00:00Z`);
+    cutoff.setUTCMonth(
+      cutoff.getUTCMonth() - rangeMonths[playerChartRange]
+    );
+    cutoffDate = cutoff.toISOString().slice(0, 10);
+  }
+
+  const inSelectedRange = game =>
+    !cutoffDate || game.r.date >= cutoffDate;
+
+  const primaryGames = allPrimaryGames.filter(inSelectedRange);
+  const comparisonGames = allComparisonGames.filter(inSelectedRange);
 
   const gameKey = game => `${game.r.date}|${game.r.course}`;
 
@@ -2497,6 +2549,9 @@ window.setCourseFilter =
 
 window.setStatsTableFilter =
   setStatsTableFilter;
+
+window.setPlayerChartRange =
+  setPlayerChartRange;
 
 window.setComparePlayer =
   setComparePlayer;
