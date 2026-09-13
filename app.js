@@ -1165,7 +1165,7 @@ function relativeFormBadge(difference) {
       class="par ${parClass(difference)}"
       title="Compared with form at this date"
     >
-      ${fmtPar(difference)}
+      (${fmtPar(difference)})
     </span>
   `;
 }
@@ -1197,11 +1197,10 @@ function playerGamesTable(games, player, comparison) {
         <tbody>
           ${games.map(game => {
             const playerScore = total(game.p);
-            const playerFormDifference = relativeFormDifference(
-              player.name,
-              game,
-              playerScore
-            );
+            const playerHistoricalForm = formAtGame(player.name, game);
+            const playerFormDifference = playerHistoricalForm === null
+              ? null
+              : Math.round(playerScore - playerHistoricalForm);
 
             const comparedPlayer = comparison
               ? (game.r.players || []).find(
@@ -1213,13 +1212,14 @@ function playerGamesTable(games, player, comparison) {
               ? total(comparedPlayer)
               : null;
 
-            const comparedFormDifference = comparedPlayer
-              ? relativeFormDifference(
-                  comparison.name,
-                  game,
-                  comparedScore
-                )
+            const comparedHistoricalForm = comparedPlayer
+              ? formAtGame(comparison.name, game)
               : null;
+
+            const comparedFormDifference =
+              comparedHistoricalForm === null
+                ? null
+                : Math.round(comparedScore - comparedHistoricalForm);
 
             return `
               <tr
@@ -1228,22 +1228,31 @@ function playerGamesTable(games, player, comparison) {
               >
                 <td>${esc(game.r.date)}</td>
                 <td>${esc(game.r.course)}</td>
-                <td><strong>${playerScore}</strong></td>
                 <td>
-                  ${relativeFormBadge(playerFormDifference) || "–"}
+                  <strong>${playerScore}</strong>
+                  ${relativeFormBadge(playerFormDifference)}
+                </td>
+                <td>
+                  ${playerHistoricalForm === null
+                    ? "–"
+                    : `<strong>${Math.round(playerHistoricalForm)}</strong>`
+                  }
                 </td>
 
                 ${comparison ? `
                   <td>
                     ${comparedScore === null
                       ? '<span class="muted">Did not play</span>'
-                      : `<strong>${comparedScore}</strong>`
+                      : `
+                        <strong>${comparedScore}</strong>
+                        ${relativeFormBadge(comparedFormDifference)}
+                      `
                     }
                   </td>
                   <td>
-                    ${comparedScore === null
+                    ${comparedHistoricalForm === null
                       ? "–"
-                      : relativeFormBadge(comparedFormDifference) || "–"
+                      : `<strong>${Math.round(comparedHistoricalForm)}</strong>`
                     }
                   </td>
                 ` : ""}
