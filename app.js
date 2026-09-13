@@ -985,7 +985,7 @@ function renderPlayer() {
             Form (last 3)
           </div>
 
-          <div class="stat form-stat">
+          <div class="stat">
             ${Math.round(p.form)}
           </div>
           ${comparisonStat(
