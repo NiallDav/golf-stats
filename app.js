@@ -282,10 +282,10 @@ function nav() {
       </button>
 
       <button
-        class="tab ${view === "rounds" ? "active" : ""}"
-        onclick="setView('rounds')"
+        class="tab ${view === "charts" ? "active" : ""}"
+        onclick="setView('charts')"
       >
-        Rounds
+        Charts
       </button>
 
       <button
@@ -296,10 +296,10 @@ function nav() {
       </button>
 
       <button
-        class="tab ${view === "charts" ? "active" : ""}"
-        onclick="setView('charts')"
+        class="tab ${view === "rounds" ? "active" : ""}"
+        onclick="setView('rounds')"
       >
-        Charts
+        Rounds
       </button>
 
     </div>
