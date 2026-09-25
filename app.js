@@ -2410,44 +2410,80 @@ async function load() {
     console.error("Workbook data error:", error);
   }
 
-  let newerDatabaseRounds = [];
+  rounds = workbookRounds.map(withoutExcludedPlayers);
 
-  if (sb) {
-    const {
-      data,
-      error
-    } =
-      await sb
+  if (rounds.length) {
+    render();
+  } else {
+    app.innerHTML = `
+      <div style="padding:30px;font-family:Arial">
+        <h2>Loading score data…</h2>
+      </div>
+    `;
+  }
+
+  if (!sb) {
+    if (!rounds.length) {
+      app.innerHTML = `
+        <div style="padding:30px;font-family:Arial">
+          <h2>Score data unavailable</h2>
+          <p>Please refresh the page.</p>
+        </div>
+      `;
+    }
+
+    return;
+  }
+
+  const timeout = ms =>
+    new Promise(resolve =>
+      setTimeout(() => resolve({ timedOut: true }), ms)
+    );
+
+  try {
+    const databaseResult = await Promise.race([
+      sb
         .from("rounds")
         .select("*")
         .gt("date", WORKBOOK_DATA_CUTOFF)
-        .order(
-          "date",
-          {
-            ascending: false
-          }
-        );
+        .order("date", { ascending: false }),
+      timeout(4000)
+    ]);
 
-    if (error) {
-      console.error("Supabase error:", error);
-    } else {
-      newerDatabaseRounds = data || [];
-    }
+    if (!databaseResult.timedOut) {
+      if (databaseResult.error) {
+        console.error("Supabase error:", databaseResult.error);
+      } else {
+        const newerDatabaseRounds = databaseResult.data || [];
 
-    const {
-      data: {
-        session: s
+        if (newerDatabaseRounds.length) {
+          rounds = [
+            ...workbookRounds,
+            ...newerDatabaseRounds
+          ].map(withoutExcludedPlayers);
+
+          render();
+        }
       }
-    } =
-      await sb.auth.getSession();
-
-    session = s;
+    } else {
+      console.warn("Supabase did not respond; using saved score data.");
+    }
+  } catch (error) {
+    console.error("Supabase error:", error);
   }
 
-  rounds = [
-    ...workbookRounds,
-    ...newerDatabaseRounds
-  ].map(withoutExcludedPlayers);
+  try {
+    const sessionResult = await Promise.race([
+      sb.auth.getSession(),
+      timeout(2000)
+    ]);
+
+    if (!sessionResult.timedOut) {
+      session = sessionResult.data?.session || null;
+    }
+  } catch (error) {
+    console.error("Supabase session error:", error);
+  }
 
   if (!rounds.length) {
     app.innerHTML = `
@@ -2456,11 +2492,7 @@ async function load() {
         <p>Please refresh the page.</p>
       </div>
     `;
-
-    return;
   }
-
-  render();
 }
 
 window.setView =
