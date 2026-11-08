@@ -257,6 +257,10 @@ function setPlayerChartRange(value) {
 function render() {
   destroyCharts();
 
+  if (view === "reset") {
+    return renderResetPassword();
+  }
+
   if (view === "login") {
     return renderLogin();
   }
@@ -2033,6 +2037,14 @@ function renderLogin() {
             Login
           </button>
 
+          <button
+            type="button"
+            class="secondary"
+            onclick="requestPasswordReset()"
+          >
+            Forgot password
+          </button>
+
         </form>
 
         <div id="loginMsg"></div>
@@ -2042,6 +2054,106 @@ function renderLogin() {
     </div>
 
   `;
+}
+
+function renderResetPassword() {
+  app.innerHTML = `
+    <div class="wrap">
+      <div class="login card">
+        <h1>Choose a new password</h1>
+
+        <p class="muted">
+          Enter the new password for your admin account.
+        </p>
+
+        <form
+          class="form"
+          onsubmit="updatePassword(event)"
+        >
+          <input
+            id="newPassword"
+            type="password"
+            placeholder="New password"
+            minlength="8"
+            required
+          >
+
+          <input
+            id="confirmPassword"
+            type="password"
+            placeholder="Confirm new password"
+            minlength="8"
+            required
+          >
+
+          <button>
+            Save new password
+          </button>
+        </form>
+
+        <div id="resetMsg"></div>
+      </div>
+    </div>
+  `;
+}
+
+async function requestPasswordReset() {
+  const email = document.getElementById("email").value.trim();
+  const msg = document.getElementById("loginMsg");
+
+  if (!email) {
+    msg.innerHTML =
+      '<div class="msg error">Enter your email address first.</div>';
+    return;
+  }
+
+  const { error } = await sb.auth.resetPasswordForEmail(
+    email,
+    {
+      redirectTo:
+        "https://nialldav.github.io/golf-stats/"
+    }
+  );
+
+  msg.innerHTML = error
+    ? `<div class="msg error">${esc(error.message)}</div>`
+    : '<div class="msg success">Password reset email sent.</div>';
+}
+
+async function updatePassword(e) {
+  e.preventDefault();
+
+  const password =
+    document.getElementById("newPassword").value;
+  const confirmation =
+    document.getElementById("confirmPassword").value;
+  const msg = document.getElementById("resetMsg");
+
+  if (password !== confirmation) {
+    msg.innerHTML =
+      '<div class="msg error">The passwords do not match.</div>';
+    return;
+  }
+
+  const { error } =
+    await sb.auth.updateUser({ password });
+
+  if (error) {
+    msg.innerHTML =
+      `<div class="msg error">${esc(error.message)}</div>`;
+    return;
+  }
+
+  msg.innerHTML =
+    '<div class="msg success">Password updated. You can now log in.</div>';
+
+  await sb.auth.signOut();
+  session = null;
+
+  setTimeout(() => {
+    view = "login";
+    render();
+  }, 1200);
 }
 
 function renderAdmin() {
@@ -2510,6 +2622,12 @@ window.openAdmin =
 window.login =
   login;
 
+window.requestPasswordReset =
+  requestPasswordReset;
+
+window.updatePassword =
+  updatePassword;
+
 window.logout =
   logout;
 
@@ -2530,5 +2648,16 @@ window.setPlayerChartRange =
 
 window.setComparePlayer =
   setComparePlayer;
+
+if (sb) {
+  sb.auth.onAuthStateChange((event, nextSession) => {
+    session = nextSession;
+
+    if (event === "PASSWORD_RECOVERY") {
+      view = "reset";
+      setTimeout(render, 0);
+    }
+  });
+}
 
 load();
