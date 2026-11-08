@@ -39,18 +39,48 @@ function coursePar(course) {
          72;
 }
 
+function playedHoleScores(p) {
+  return (p?.scores || [])
+    .slice(0, 18)
+    .map(score => {
+      if (score === null || score === undefined || score === "") {
+        return null;
+      }
+
+      const value = Number(score);
+      return Number.isFinite(value) && value > 0 ? value : null;
+    });
+}
+
+function hasCompleteScore(p) {
+  const scores = playedHoleScores(p);
+
+  return scores.length === 18 &&
+    scores.every(score => score !== null);
+}
+
 function total(p) {
-  return (p?.scores || []).reduce(
-    (a, b) => a + Number(b || 0),
+  if (!hasCompleteScore(p)) return null;
+
+  return playedHoleScores(p).reduce(
+    (sum, score) => sum + score,
     0
   );
 }
 
 function overPar(p, r) {
-  return total(p) - coursePar(r.course);
+  const score = total(p);
+
+  return score === null
+    ? null
+    : score - coursePar(r.course);
 }
 
 function fmtPar(n) {
+  if (n === null || n === undefined || !Number.isFinite(Number(n))) {
+    return "–";
+  }
+
   n = Number(n);
 
   if (n === 0) return "E";
@@ -92,6 +122,10 @@ function coursePars(course) {
 }
 
 function parClass(n) {
+  if (n === null || n === undefined || !Number.isFinite(Number(n))) {
+    return "";
+  }
+
   n = Number(n);
 
   return n < 0 ? "under" :
@@ -132,7 +166,7 @@ function playerRounds(name, course = "all") {
         x => x.name === name
       );
 
-      return p ? { r, p } : null;
+      return p && hasCompleteScore(p) ? { r, p } : null;
     })
     .filter(Boolean);
 }
@@ -576,7 +610,15 @@ function roundSummary(r, index) {
   const ps =
     (r.players || [])
       .slice()
-      .sort((a, b) => total(a) - total(b));
+      .sort((a, b) => {
+        const aTotal = total(a);
+        const bTotal = total(b);
+
+        if (aTotal === null) return bTotal === null ? 0 : 1;
+        if (bTotal === null) return -1;
+
+        return aTotal - bTotal;
+      });
 
   return `
 
@@ -624,18 +666,20 @@ function roundSummary(r, index) {
             <div>
 
               <strong>
-                ${total(p)}
+                ${total(p) === null ? "Incomplete" : total(p)}
               </strong>
 
-              <span
-                class="par ${parClass(
-                  overPar(p, r)
-                )}"
-              >
-                ${fmtPar(
-                  overPar(p, r)
-                )}
-              </span>
+              ${total(p) === null ? "" : `
+                <span
+                  class="par ${parClass(
+                    overPar(p, r)
+                  )}"
+                >
+                  ${fmtPar(
+                    overPar(p, r)
+                  )}
+                </span>
+              `}
 
             </div>
 
@@ -695,7 +739,15 @@ function roundList(rs) {
 
             ${(r.players || [])
               .slice()
-              .sort((a, b) => total(a) - total(b))
+              .sort((a, b) => {
+                const aTotal = total(a);
+                const bTotal = total(b);
+
+                if (aTotal === null) return bTotal === null ? 0 : 1;
+                if (bTotal === null) return -1;
+
+                return aTotal - bTotal;
+              })
               .map(p => `
 
                 <span class="pill">
@@ -703,18 +755,20 @@ function roundList(rs) {
                   ${esc(p.name)}
 
                   <strong>
-                    ${total(p)}
+                    ${total(p) === null ? "Incomplete" : total(p)}
                   </strong>
 
-                  <span
-                    class="par ${parClass(
-                      overPar(p, r)
-                    )}"
-                  >
-                    ${fmtPar(
-                      overPar(p, r)
-                    )}
-                  </span>
+                  ${total(p) === null ? "" : `
+                    <span
+                      class="par ${parClass(
+                        overPar(p, r)
+                      )}"
+                    >
+                      ${fmtPar(
+                        overPar(p, r)
+                      )}
+                    </span>
+                  `}
 
                 </span>
 
@@ -1749,10 +1803,15 @@ function renderRound() {
   const players =
     (r.players || [])
       .slice()
-      .sort(
-        (a, b) =>
-          total(a) - total(b)
-      );
+      .sort((a, b) => {
+        const aTotal = total(a);
+        const bTotal = total(b);
+
+        if (aTotal === null) return bTotal === null ? 0 : 1;
+        if (bTotal === null) return -1;
+
+        return aTotal - bTotal;
+      });
 
   const pars =
     r.course === "Belhus"
@@ -1930,49 +1989,53 @@ function renderRound() {
 
                   </td>
 
-                  ${(p.scores || [])
-                    .slice(0,18)
-                    .map((score, i) => {
-
+                  ${Array.from({ length: 18 }, (_, i) => {
+                      const score = p.scores?.[i];
                       const n =
-                        Number(score);
+                        score === null || score === undefined || score === ""
+                          ? null
+                          : Number(score);
 
-                      const diff =
-                        n - pars[i];
+                      if (!Number.isFinite(n) || n <= 0) {
+                        return `
+                          <td class="score-missing">–</td>
+                        `;
+                      }
 
+                      const diff = n - pars[i];
                       const cls = holeScoreClass({
                         score: n,
                         diff
                       });
 
                       return `
-
                         <td class="${cls}">
                           ${n}
                         </td>
-
                       `;
-
                     }).join("")}
 
                   <td>
                     <strong>
-                      ${total(p)}
+                      ${total(p) === null ? "–" : total(p)}
                     </strong>
                   </td>
 
                   <td>
-
-                    <span
-                      class="par ${parClass(
-                        overPar(p, r)
-                      )}"
-                    >
-                      ${fmtPar(
-                        overPar(p, r)
-                      )}
-                    </span>
-
+                    ${total(p) === null
+                      ? '<span class="muted">Incomplete</span>'
+                      : `
+                        <span
+                          class="par ${parClass(
+                            overPar(p, r)
+                          )}"
+                        >
+                          ${fmtPar(
+                            overPar(p, r)
+                          )}
+                        </span>
+                      `
+                    }
                   </td>
 
                 </tr>
@@ -2290,12 +2353,16 @@ function addPlayerRow(name = "") {
               min="1"
               max="20"
               placeholder="${i + 1}"
-              required
+              aria-label="Hole ${i + 1}; leave blank if skipped"
             >
 
           `
         ).join("")}
 
+      </div>
+
+      <div class="muted">
+        Leave any skipped holes blank.
       </div>
 
     </div>
@@ -2332,8 +2399,10 @@ async function addRound(e) {
           ...row.querySelectorAll(
             ".score"
           )
-        ].map(
-          x => Number(x.value)
+        ].map(x =>
+          x.value.trim() === ""
+            ? null
+            : Number(x.value)
         )
     }));
 
